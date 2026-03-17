@@ -81,6 +81,40 @@ router.post('/regions/import', authenticate, requireAdmin,
   }
 );
 
+// Adicionar região
+router.post('/regions', authenticate, requireAdmin, async (req, res) => {
+  try {
+    const { country_name, country_code, territory } = req.body;
+    if (!country_name || !territory) {
+      return res.status(400).json({ error: 'country_name e territory são obrigatórios' });
+    }
+    const validTerritories = ['Brazil', 'Mexico', 'NOLA', 'SOLA'];
+    if (!validTerritories.includes(territory)) {
+      return res.status(400).json({ error: 'Território inválido' });
+    }
+    const db = require('../config/database');
+    const { rows } = await db.query(
+      `INSERT INTO regions (country_name, country_code, territory)
+       VALUES ($1, $2, $3) RETURNING *`,
+      [country_name, country_code || null, territory]
+    );
+    res.status(201).json(rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao adicionar região' });
+  }
+});
+
+// Deletar região
+router.delete('/regions/:id', authenticate, requireAdmin, async (req, res) => {
+  try {
+    const db = require('../config/database');
+    await db.query('DELETE FROM regions WHERE id = $1', [req.params.id]);
+    res.json({ message: 'Região removida' });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao remover região' });
+  }
+});
+
 // Notificações
 router.get('/notifications', authenticate, async (req, res) => {
   try {
