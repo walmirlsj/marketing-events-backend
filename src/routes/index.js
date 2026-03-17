@@ -37,7 +37,7 @@ router.post('/events', optionalAuth, eventsCtrl.createEvent);
 router.post('/events/import', authenticate, upload.single('file'), eventsCtrl.importFile);
 router.patch('/events/:id/review', authenticate, requireAdmin, eventsCtrl.reviewEvent);
 
-// Admin
+// Admin pendentes
 router.get('/admin/events/pending', authenticate, requireAdmin, async (req, res) => {
   try {
     const db = require('../config/database');
@@ -66,22 +66,6 @@ router.get('/regions', async (req, res) => {
   }
 });
 
-router.post('/regions/import', authenticate, requireAdmin,
-  upload.single('file'),
-  async (req, res) => {
-    if (!req.file) return res.status(400).json({ error: 'Arquivo não enviado' });
-    try {
-      const content = fs.readFileSync(req.file.path, 'utf-8');
-      const result = await importRegionsFromCSV(content);
-      fs.unlinkSync(req.file.path);
-      res.json(result);
-    } catch (err) {
-      res.status(500).json({ error: err.message });
-    }
-  }
-);
-
-// Adicionar região
 router.post('/regions', authenticate, requireAdmin, async (req, res) => {
   try {
     const { country_name, country_code, territory } = req.body;
@@ -104,7 +88,26 @@ router.post('/regions', authenticate, requireAdmin, async (req, res) => {
   }
 });
 
-// Deletar região
+router.put('/regions/:id', authenticate, requireAdmin, async (req, res) => {
+  try {
+    const { country_name, country_code, territory } = req.body;
+    const validTerritories = ['Brazil', 'Mexico', 'NOLA', 'SOLA'];
+    if (!validTerritories.includes(territory)) {
+      return res.status(400).json({ error: 'Território inválido' });
+    }
+    const db = require('../config/database');
+    const { rows } = await db.query(
+      `UPDATE regions SET country_name = $1, country_code = $2, territory = $3
+       WHERE id = $4 RETURNING *`,
+      [country_name, country_code || null, territory, req.params.id]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Região não encontrada' });
+    res.json(rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao atualizar região' });
+  }
+});
+
 router.delete('/regions/:id', authenticate, requireAdmin, async (req, res) => {
   try {
     const db = require('../config/database');
@@ -114,6 +117,21 @@ router.delete('/regions/:id', authenticate, requireAdmin, async (req, res) => {
     res.status(500).json({ error: 'Erro ao remover região' });
   }
 });
+
+router.post('/regions/import', authenticate, requireAdmin,
+  upload.single('file'),
+  async (req, res) => {
+    if (!req.file) return res.status(400).json({ error: 'Arquivo não enviado' });
+    try {
+      const content = fs.readFileSync(req.file.path, 'utf-8');
+      const result = await importRegionsFromCSV(content);
+      fs.unlinkSync(req.file.path);
+      res.json(result);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  }
+);
 
 // Notificações
 router.get('/notifications', authenticate, async (req, res) => {
