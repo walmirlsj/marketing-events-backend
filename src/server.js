@@ -104,9 +104,15 @@ async function runMigrations() {
       ['Peru','PE','SOLA'],
     ];
     for (const [name, code, territory] of regions) {
-      await client.query(
-        `INSERT INTO regions (country_name, country_code, territory)
-         VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`,
+      const { rows: existingRegions } = await client.query('SELECT COUNT(*) FROM regions');
+if (parseInt(existingRegions[0].count) === 0) {
+  for (const [name, code, territory] of regions) {
+    await client.query(
+      `INSERT INTO regions (country_name, country_code, territory) VALUES ($1, $2, $3)`,
+      [name, code, territory]
+    );
+  }
+}
         [name, code, territory]
       );
     }
