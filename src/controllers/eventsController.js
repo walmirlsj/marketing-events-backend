@@ -75,7 +75,10 @@ async function createEvent(req, res) {
       await client.query(`INSERT INTO event_guests (event_id, guest_name, guest_email) VALUES ($1, $2, $3)`, [rows[0].id, gName, gEmail]);
     }
     await client.query('COMMIT');
-    res.status(201).json({ ...rows[0], guests, message: 'Evento criado com status "Pendente".' });
+    if (global.notifyAdminNewEvent) {
+  global.notifyAdminNewEvent(name, req.user?.name).catch(console.error);
+}
+res.status(201).json({ ...rows[0], guests, message: 'Evento criado com status "Pendente".' });
   } catch (err) {
     await client.query('ROLLBACK');
     res.status(500).json({ error: 'Erro ao criar evento' });
