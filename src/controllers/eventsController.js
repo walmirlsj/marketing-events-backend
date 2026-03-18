@@ -11,6 +11,10 @@ async function listEvents(req, res) {
     let where = [], params = [], idx = 1;
     if (effectiveStatus) { where.push(`e.status = $${idx++}`); params.push(effectiveStatus); }
     if (territory) { where.push(`e.territory = $${idx++}`); params.push(territory); }
+    if (req.query.created_by) {
+  where.push(`e.created_by = $${idx++}`);
+  params.push(parseInt(req.query.created_by));
+}
     if (search) {
       where.push(`(LOWER(e.name) LIKE $${idx} OR LOWER(e.description) LIKE $${idx})`);
       params.push(`%${search.toLowerCase()}%`); idx++;
