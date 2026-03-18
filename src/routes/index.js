@@ -45,7 +45,7 @@ router.put('/events/:id', authenticate, async (req, res) => {
     if (!rows.length) return res.status(404).json({ error: 'Evento não encontrado' });
     const event = rows[0];
 
-    if (req.user.role !== 'admin' && event.created_by !== req.user.id) {
+    if (req.user.role !== 'admin' && parseInt(event.created_by) !== parseInt(req.user.id)) {
       return res.status(403).json({ error: 'Sem permissão para editar este evento' });
     }
     if (req.user.role !== 'admin' && event.status !== 'pending') {
@@ -75,7 +75,7 @@ router.delete('/events/:id', authenticate, async (req, res) => {
     if (!rows.length) return res.status(404).json({ error: 'Evento não encontrado' });
     const event = rows[0];
 
-    if (req.user.role !== 'admin' && event.created_by !== req.user.id) {
+    if (req.user.role !== 'admin' && parseInt(event.created_by) !== parseInt(req.user.id)) {
       return res.status(403).json({ error: 'Sem permissão para deletar este evento' });
     }
     if (req.user.role !== 'admin' && event.status !== 'pending') {
