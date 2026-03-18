@@ -37,6 +37,58 @@ router.post('/events', authenticate, eventsCtrl.createEvent);
 router.post('/events/import', authenticate, upload.single('file'), eventsCtrl.importFile);
 router.patch('/events/:id/review', authenticate, requireAdmin, eventsCtrl.reviewEvent);
 
+// Editar evento (dono do evento, apenas se pendente)
+router.put('/events/:id', authenticate, async (req, res) => {
+  try {
+    const db = require('../config/database');
+    const { rows } = await db.query('SELECT * FROM events WHERE id = $1', [req.params.id]);
+    if (!rows.length) return res.status(404).json({ error: 'Evento não encontrado' });
+    const event = rows[0];
+
+    if (req.user.role !== 'admin' && event.created_by !== req.user.id) {
+      return res.status(403).json({ error: 'Sem permissão para editar este evento' });
+    }
+    if (req.user.role !== 'admin' && event.status !== 'pending') {
+      return res.status(400).json({ error: 'Só é possível editar eventos pendentes' });
+    }
+
+    const { name, description, city, country, event_date } = req.body;
+    const { classifyTerritory } = require('../services/territoryService');
+    const territory = await classifyTerritory(country);
+
+    const { rows: updated } = await db.query(
+      `UPDATE events SET name=$1, description=$2, city=$3, country=$4,
+       territory=$5, event_date=$6 WHERE id=$7 RETURNING *`,
+      [name, description, city, country, territory, event_date || null, req.params.id]
+    );
+    res.json(updated[0]);
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao editar evento' });
+  }
+});
+
+// Deletar evento (dono se pendente, admin qualquer)
+router.delete('/events/:id', authenticate, async (req, res) => {
+  try {
+    const db = require('../config/database');
+    const { rows } = await db.query('SELECT * FROM events WHERE id = $1', [req.params.id]);
+    if (!rows.length) return res.status(404).json({ error: 'Evento não encontrado' });
+    const event = rows[0];
+
+    if (req.user.role !== 'admin' && event.created_by !== req.user.id) {
+      return res.status(403).json({ error: 'Sem permissão para deletar este evento' });
+    }
+    if (req.user.role !== 'admin' && event.status !== 'pending') {
+      return res.status(400).json({ error: 'Só é possível deletar eventos pendentes' });
+    }
+
+    await db.query('DELETE FROM events WHERE id = $1', [req.params.id]);
+    res.json({ message: 'Evento deletado' });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao deletar evento' });
+  }
+});
+
 // Admin pendentes
 router.get('/admin/events/pending', authenticate, requireAdmin, async (req, res) => {
   try {
