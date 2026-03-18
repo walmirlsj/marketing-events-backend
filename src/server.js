@@ -122,6 +122,51 @@ async function runMigrations() {
   }
 }
 
+async function notifyAdminNewEvent(eventName, creatorName) {
+  const adminEmail = process.env.ADMIN_EMAIL;
+  if (!adminEmail || !process.env.EMAIL_USER) return;
+
+  const nodemailer = require('nodemailer');
+  const transporter = nodemailer.createTransport({
+    host: process.env.EMAIL_HOST,
+    port: parseInt(process.env.EMAIL_PORT, 10),
+    secure: process.env.EMAIL_SECURE === 'true',
+    auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
+  });
+
+  try {
+    await transporter.sendMail({
+      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+      to: adminEmail,
+      subject: `🔔 Novo evento pendente: ${eventName}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px;">
+          <div style="background: #185FA5; padding: 24px; border-radius: 8px 8px 0 0;">
+            <h1 style="color: white; margin: 0; font-size: 20px;">Novo Evento Pendente</h1>
+          </div>
+          <div style="background: #f9f9f9; padding: 24px; border-radius: 0 0 8px 8px;">
+            <p>Um novo evento foi cadastrado e aguarda sua aprovação:</p>
+            <div style="background: white; border-left: 4px solid #185FA5; padding: 16px; margin: 16px 0; border-radius: 4px;">
+              <p style="margin: 0; font-size: 18px; font-weight: bold;">${eventName}</p>
+              <p style="margin: 4px 0 0; color: #888;">Cadastrado por: ${creatorName || 'Anônimo'}</p>
+            </div>
+            <a href="${process.env.FRONTEND_URL}/admin"
+               style="display: inline-block; background: #185FA5; color: white; padding: 12px 24px;
+                      border-radius: 6px; text-decoration: none; font-weight: bold;">
+              Revisar no Painel Admin
+            </a>
+          </div>
+        </div>
+      `,
+    });
+    console.log(`[Admin] Notificação enviada para ${adminEmail}`);
+  } catch (err) {
+    console.error('[Admin] Erro ao enviar email:', err.message);
+  }
+}
+
+global.notifyAdminNewEvent = notifyAdminNewEvent;
+
 async function start() {
   await runMigrations();
   app.listen(PORT, () => {
