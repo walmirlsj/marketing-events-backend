@@ -89,33 +89,30 @@ async function runMigrations() {
       ON CONFLICT (email) DO NOTHING
     `, [hash]);
 
-    const regions = [
-      ['Brazil','BR','Brazil'],['Brasil','BR','Brazil'],
-      ['Mexico','MX','Mexico'],['México','MX','Mexico'],
-      ['Colombia','CO','NOLA'],['Venezuela','VE','NOLA'],
-      ['Ecuador','EC','NOLA'],['Panama','PA','NOLA'],
-      ['Costa Rica','CR','NOLA'],['Guatemala','GT','NOLA'],
-      ['Honduras','HN','NOLA'],['El Salvador','SV','NOLA'],
-      ['Nicaragua','NI','NOLA'],['Dominican Republic','DO','NOLA'],
-      ['Cuba','CU','NOLA'],['Haiti','HT','NOLA'],
-      ['Jamaica','JM','NOLA'],['Bolivia','BO','NOLA'],
-      ['Argentina','AR','SOLA'],['Chile','CL','SOLA'],
-      ['Uruguay','UY','SOLA'],['Paraguay','PY','SOLA'],
-      ['Peru','PE','SOLA'],
-    ];
-    for (const [name, code, territory] of regions) {
-      const { rows: existingRegions } = await client.query('SELECT COUNT(*) FROM regions');
-if (parseInt(existingRegions[0].count) === 0) {
-  for (const [name, code, territory] of regions) {
-    await client.query(
-      `INSERT INTO regions (country_name, country_code, territory) VALUES ($1, $2, $3)`,
-      [name, code, territory]
-    );
-  }
-}
-        [name, code, territory]
-      );
+    const { rows: existingRegions } = await client.query('SELECT COUNT(*) FROM regions');
+    if (parseInt(existingRegions[0].count) === 0) {
+      const regions = [
+        ['Brazil','BR','Brazil'],['Brasil','BR','Brazil'],
+        ['Mexico','MX','Mexico'],['México','MX','Mexico'],
+        ['Colombia','CO','NOLA'],['Venezuela','VE','NOLA'],
+        ['Ecuador','EC','NOLA'],['Panama','PA','NOLA'],
+        ['Costa Rica','CR','NOLA'],['Guatemala','GT','NOLA'],
+        ['Honduras','HN','NOLA'],['El Salvador','SV','NOLA'],
+        ['Nicaragua','NI','NOLA'],['Dominican Republic','DO','NOLA'],
+        ['Cuba','CU','NOLA'],['Haiti','HT','NOLA'],
+        ['Jamaica','JM','NOLA'],['Bolivia','BO','NOLA'],
+        ['Argentina','AR','SOLA'],['Chile','CL','SOLA'],
+        ['Uruguay','UY','SOLA'],['Paraguay','PY','SOLA'],
+        ['Peru','PE','SOLA'],
+      ];
+      for (const [name, code, territory] of regions) {
+        await client.query(
+          `INSERT INTO regions (country_name, country_code, territory) VALUES ($1, $2, $3)`,
+          [name, code, territory]
+        );
+      }
     }
+
     console.log('✅ Migrations and seed completed!');
   } catch (err) {
     console.error('Migration error:', err.message);
