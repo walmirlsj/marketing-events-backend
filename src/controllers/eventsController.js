@@ -7,7 +7,14 @@ const fs = require('fs');
 async function listEvents(req, res) {
   try {
     const { status, territory, search, page = 1, limit = 20 } = req.query;
-    const effectiveStatus = req.user?.role === 'admin' ? (status || null) : 'approved';
+    let effectiveStatus;
+if (req.user?.role === 'admin') {
+  effectiveStatus = status || null;
+} else if (req.query.created_by && parseInt(req.query.created_by) === parseInt(req.user?.id)) {
+  effectiveStatus = status || null;
+} else {
+  effectiveStatus = 'approved';
+}
     let where = [], params = [], idx = 1;
     if (effectiveStatus) { where.push(`e.status = $${idx++}`); params.push(effectiveStatus); }
     if (territory) { where.push(`e.territory = $${idx++}`); params.push(territory); }
