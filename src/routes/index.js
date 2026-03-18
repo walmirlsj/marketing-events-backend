@@ -31,9 +31,9 @@ router.post('/auth/login', authCtrl.login);
 router.get('/auth/me', authenticate, authCtrl.getProfile);
 
 // Events
-router.get('/events', optionalAuth, eventsCtrl.listEvents);
-router.get('/events/:id', optionalAuth, eventsCtrl.getEvent);
-router.post('/events', optionalAuth, eventsCtrl.createEvent);
+router.get('/events', authenticate, eventsCtrl.listEvents);
+router.get('/events/:id', authenticate, eventsCtrl.getEvent);
+router.post('/events', authenticate, eventsCtrl.createEvent);
 router.post('/events/import', authenticate, upload.single('file'), eventsCtrl.importFile);
 router.patch('/events/:id/review', authenticate, requireAdmin, eventsCtrl.reviewEvent);
 
